@@ -152,6 +152,14 @@ By up to one turn: usage rows are written when a request completes.
 The engine is pure stdlib Python and the hooks use `type: "process"` (no shell).
 Developed on Windows; paths follow `~/.zcode` on every platform.
 
+**Verified hook payload (ZCode 0.16.5).** The official docs don't document the hook
+stdin schema; empirically it carries both naming conventions:
+`session_id`/`sessionId`, `transcript_path`/`transcriptPath`, `cwd`,
+`prompt`, `hook_event_name`/`hookEventName`, `permission_mode`, `trace_id`, `turn_id`.
+ZCode also sets `CLAUDE_SESSION_ID` in the hook's environment. The engine resolves
+the session from these, falling back to cwd matching. Note hooks are snapshotted at
+session start — restart a session after changing hook config.
+
 **Why not just show it in a status line?**
 ZCode has no status-line hook today. The `additionalContext` injection is the one
 channel that reaches both you *and* the model — so the model itself can act on the

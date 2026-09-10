@@ -142,6 +142,12 @@ flowchart LR
 引擎是纯标准库 Python，hooks 用 `type: "process"`（不经 shell）。在 Windows 上开发；
 所有平台都遵循 `~/.zcode` 路径约定。
 
+**实测确认的 hook payload（ZCode 0.16.5）。** 官方文档没有 hook stdin 的字段清单；
+实测同时携带两种命名风格：`session_id`/`sessionId`、`transcript_path`/`transcriptPath`、
+`cwd`、`prompt`、`hook_event_name`/`hookEventName`、`permission_mode`、`trace_id`、`turn_id`，
+并且 hook 环境变量里有 `CLAUDE_SESSION_ID`。引擎优先用这些字段定位会话，失败时回退到 cwd 匹配。
+注意：hooks 配置在**会话启动时快照**——改完 hook 配置需要重开会话才生效。
+
 **为什么不做成状态栏？**
 ZCode 目前没有 statusline 机制。`additionalContext` 注入是唯一同时能到达**你和模型**的
 通道——模型自己也能看到水位并据此行动（收尾、总结、压缩）。
