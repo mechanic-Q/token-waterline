@@ -53,27 +53,60 @@ and warns you to compact **before** an emergency compaction eats your context.
 
 ## Quick start
 
+token-waterline is a standard **ZCode plugin** (inline source). Two ways to install:
+
+**Option A — one command (recommended):**
+
 ```bash
 git clone https://github.com/mechanic-Q/token-waterline.git
 cd token-waterline
-./install.sh          # idempotent; backs up your config first
+./install.sh          # backs up config, registers the plugin, migrates legacy hooks
 ```
 
-`install.sh` does three things:
+**Option B — manual (no script):**
 
-1. Merges hooks into `~/.zcode/cli/config.json` (backs it up first): a
-   `UserPromptSubmit` hook on every prompt, and a `SessionStart` hook on
-   `resume|compact` — both spawn the engine directly (`type: "process"`, no shell).
-2. Installs the `/waterline` slash command to `~/.zcode/commands/`.
-3. Writes default thresholds to `~/.zcode/token-waterline.json`.
+1. Clone the repo anywhere.
+2. Add its path to `~/.zcode/cli/config.json`:
 
-That's it. New ZCode sessions now show a live water line:
+```json
+{
+  "plugins": {
+    "enabled": true,
+    "dirs": ["/absolute/path/to/token-waterline"]
+  }
+}
+```
+
+That's it — the plugin ships its own hooks and the `/waterline` command, so **every new
+session** loads them automatically (no per-project setup, no marketplace needed).
+
+Verify with the bundled CLI:
+
+```bash
+ELECTRON_RUN_AS_NODE=1 "/path/to/ZCode/ZCode.exe" \
+  "/path/to/ZCode/resources/glm/zcode.cjs" plugins list
+# → qianliyan@inline [enabled]   skills: 0, commands: 1, hooks: 2
+```
+
+Then **restart your ZCode session** — hooks and commands are snapshotted at session start.
+
+### What you get
+
+A ~25-token one-liner is injected into context on every prompt ([token-waterline] …),
+escalating to compaction advice at 70% / 85% / 95%:
 
 ```
-[token-waterline] [Token水位] 73.6% (736.1K/1.0M)｜本会话已烧 274.8M｜剩余≈13轮｜⚠ 水位≥70%：建议收尾规划，考虑 /compress 或开新会话
+[token-waterline] [Token水位] 21.1% (211.1K/1.0M)｜本会话已烧 24.3M｜剩余≈>500轮
 ```
 
-Below 70% it's a quiet one-liner; at 70 / 85 / 95% it escalates to compaction advice.
+Plus the `/waterline` slash command for the full gauge.
+
+> **UI note.** ZCode plugins cannot render into the ZCode UI — there is no statusline,
+> widget, or panel API (verified against the runtime: plugin manifest keys are limited to
+> `skills` / `commands` / `hooks` / `mcpServers` / `userConfig`, and `outputStyles` /
+> `channels` / `lspServers` are diagnostic-only). The hook `additionalContext` channel and
+> the slash-command menu are the only plugin-visible surfaces. So the gauge lives in the
+> **model's** context every turn, and `/waterline` is one keystroke away for you.
 
 ### Manual inspection
 
@@ -91,7 +124,7 @@ python bin/waterline.py --format line      # one-liner
 ### Uninstall
 
 ```bash
-./uninstall.sh     # removes only what this tool added
+./uninstall.sh     # unregisters the plugin, removes legacy hooks/commands
 ```
 
 ## How it works
@@ -164,6 +197,17 @@ session start — restart a session after changing hook config.
 ZCode has no status-line hook today. The `additionalContext` injection is the one
 channel that reaches both you *and* the model — so the model itself can act on the
 warning (wrap up, summarize, compact).
+
+## File layout
+
+```
+.zcode-plugin/plugin.json  plugin manifest (name: qianliyan — declares commands + hooks)
+hooks/hooks.json           UserPromptSubmit + SessionStart(resume|compact)
+bin/waterline.py           core engine (Python 3 stdlib, zero deps, ~100 ms)
+commands/waterline.md      /waterline slash command
+install.py / install.sh    register plugin (idempotent, backs up config)
+uninstall.py / uninstall.sh unregister plugin
+```
 
 ## Contributing
 

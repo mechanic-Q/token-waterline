@@ -45,26 +45,59 @@ ZCode（和所有编码 agent 一样）**每一轮都把全部上下文重新发
 
 ## 快速开始
 
+token-waterline 是一个标准的 **ZCode 插件**（inline 本地源）。两种安装方式：
+
+**方式 A —— 一条命令（推荐）：**
+
 ```bash
 git clone https://github.com/mechanic-Q/token-waterline.git
 cd token-waterline
-./install.sh          # 幂等；安装前自动备份你的配置
+./install.sh          # 自动备份配置、注册插件、迁移旧版 hooks
 ```
 
-`install.sh` 做三件事：
+**方式 B —— 手动（不用脚本）：**
 
-1. 把 hooks 合并进 `~/.zcode/cli/config.json`（先备份）：每轮触发的 `UserPromptSubmit`
-   + 恢复/压缩时触发的 `SessionStart`——都是 `type: "process"` 直接拉起引擎，不经过 shell。
-2. 安装 `/waterline` 斜杠命令到 `~/.zcode/commands/`。
-3. 写默认阈值配置 `~/.zcode/token-waterline.json`。
+1. 把仓库 clone 到任意位置。
+2. 把它的路径加到 `~/.zcode/cli/config.json`：
 
-完成。新开的 ZCode 会话从此有实时水位：
+```json
+{
+  "plugins": {
+    "enabled": true,
+    "dirs": ["/token-waterline 的绝对路径"]
+  }
+}
+```
+
+就这样——插件自带 hooks 和 `/waterline` 命令，**每个新会话**都会自动加载
+（不需要逐项目配置，也不需要 marketplace）。
+
+用内置 CLI 验证：
+
+```bash
+ELECTRON_RUN_AS_NODE=1 "/path/to/ZCode/ZCode.exe" \
+  "/path/to/ZCode/resources/glm/zcode.cjs" plugins list
+# → qianliyan@inline [enabled]   skills: 0, commands: 1, hooks: 2
+```
+
+然后**重开一个 ZCode 会话**——hooks 与命令是会话启动时快照的。
+
+### 你会得到什么
+
+每轮都会往上下文注入约 25 token 的一行水位（`[token-waterline] …`），
+70% / 85% / 95% 三档升级为压缩建议：
 
 ```
-[token-waterline] [Token水位] 73.6% (736.1K/1.0M)｜本会话已烧 274.8M｜剩余≈13轮｜⚠ 水位≥70%：建议收尾规划，考虑 /compress 或开新会话
+[token-waterline] [Token水位] 21.1% (211.1K/1.0M)｜本会话已烧 24.3M｜剩余≈>500轮
 ```
 
-低于 70% 是安静的一行播报；70 / 85 / 95% 三档逐步升级为压缩建议。
+外加 `/waterline` 斜杠命令看完整水位表。
+
+> **关于界面。** ZCode 插件**无法**把内容渲染进 ZCode UI——没有 statusline、widget 或面板
+> API（已对照运行时证实：插件 manifest 可用键仅 `skills` / `commands` / `hooks` /
+> `mcpServers` / `userConfig`，`outputStyles` / `channels` / `lspServers` 仅作诊断）。
+> hook 的 `additionalContext` 通道和斜杠命令菜单是插件唯一的可见表面。所以水位活在
+> **模型**每轮的上下文里，而你要看数字，敲 `/waterline` 即可。
 
 ### 手动查看
 
@@ -82,7 +115,7 @@ python bin/waterline.py --format line      # 单行摘要
 ### 卸载
 
 ```bash
-./uninstall.sh     # 只移除本工具添加的内容
+./uninstall.sh     # 注销插件、清理旧版 hooks/命令
 ```
 
 ## 工作原理
@@ -151,6 +184,17 @@ flowchart LR
 **为什么不做成状态栏？**
 ZCode 目前没有 statusline 机制。`additionalContext` 注入是唯一同时能到达**你和模型**的
 通道——模型自己也能看到水位并据此行动（收尾、总结、压缩）。
+
+## 文件清单
+
+```
+.zcode-plugin/plugin.json  插件 manifest（name: qianliyan，声明 commands + hooks）
+hooks/hooks.json           UserPromptSubmit + SessionStart(resume|compact)
+bin/waterline.py           核心引擎（Python 3 标准库，零依赖，单次约 100ms）
+commands/waterline.md      /waterline 斜杠命令
+install.py / install.sh    注册插件（幂等，自动备份配置）
+uninstall.py / uninstall.sh 注销插件
+```
 
 ## 参与贡献
 

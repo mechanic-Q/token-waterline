@@ -35,6 +35,8 @@ DEFAULT_DB = os.path.join(HOME, ".zcode", "cli", "db", "db.sqlite")
 DEFAULT_ZCODE_CONFIG = os.path.join(HOME, ".zcode", "v2", "config.json")
 DEFAULT_THRESHOLD_FILE = os.path.join(HOME, ".zcode", "token-waterline.json")
 DEBUG_DIR = os.path.join(HOME, ".zcode", "token-waterline-debug")
+# 记录引擎自身的绝对路径，供 /waterline 斜杠命令定位（命令正文不支持插件变量替换）
+ENGINE_PATH_FILE = os.path.join(HOME, ".zcode", "token-waterline.path")
 
 DEFAULTS = {
     "warn": 70,                 # 提醒阈值（%）
@@ -446,8 +448,26 @@ def write_debug(payload_raw, extra):
         pass
 
 
+def remember_engine_path():
+    """把自己的绝对路径写到固定位置，供 /waterline 命令读取（命令正文无插件变量替换）。"""
+    try:
+        me = os.path.abspath(__file__)
+        try:
+            with open(ENGINE_PATH_FILE, encoding="utf-8") as f:
+                if f.read().strip() == me:
+                    return
+        except OSError:
+            pass
+        os.makedirs(os.path.dirname(ENGINE_PATH_FILE), exist_ok=True)
+        with open(ENGINE_PATH_FILE, "w", encoding="utf-8") as f:
+            f.write(me)
+    except Exception:
+        pass
+
+
 def main():
     setup_streams()
+    remember_engine_path()
     ap = argparse.ArgumentParser(description="ZCode 会话 Token 水位计")
     ap.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     ap.add_argument("--format", choices=["gauge", "line", "json"], default="gauge")

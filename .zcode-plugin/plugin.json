@@ -1,0 +1,10 @@
+{
+  "name": "qianliyan",
+  "version": "0.2.0",
+  "description": "⛽ ZCode 会话 Token 水位计：实时上下文水位、燃烧速率与压缩预警，触顶之前早知道。Live token water-level gauge for ZCode sessions.",
+  "author": { "name": "mechanic-Q" },
+  "license": "MIT",
+  "homepage": "https://github.com/mechanic-Q/token-waterline",
+  "commands": "commands",
+  "hooks": "hooks"
+}

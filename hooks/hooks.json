@@ -1,0 +1,31 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "process",
+            "command": "python",
+            "args": ["${ZCODE_PLUGIN_ROOT}/bin/waterline.py", "--format", "line", "--hook"],
+            "timeoutMs": 10000,
+            "statusMessage": "token-waterline"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "resume|compact",
+        "hooks": [
+          {
+            "type": "process",
+            "command": "python",
+            "args": ["${ZCODE_PLUGIN_ROOT}/bin/waterline.py", "--format", "line", "--hook"],
+            "timeoutMs": 10000,
+            "statusMessage": "token-waterline"
+          }
+        ]
+      }
+    ]
+  }
+}
