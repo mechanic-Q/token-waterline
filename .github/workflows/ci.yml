@@ -20,6 +20,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Syntax check
         run: python -m py_compile bin/waterline.py install.py uninstall.py
+      - name: Validate plugin manifests
+        run: |
+          python -c "import json;[json.load(open(f,encoding='utf-8')) for f in ['.zcode-plugin/plugin.json','hooks/hooks.json']];print('manifests OK')"
       - name: CLI smoke test
         run: |
           python bin/waterline.py --version
